@@ -32,6 +32,7 @@ async def create_tables():
             telegram_id varchar(200) unique,
             created_at timestamp default now(),
             is_admin bool default false,
+            password varchar(100) ,
             is_active bool default true
         );
 

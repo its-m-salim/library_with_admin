@@ -1,5 +1,5 @@
 from aiogram import  Router, F
-from aiogram.types import Message
+from aiogram.types import Message, CallbackQuery
 from aiogram.filters import Command
 from aiogram.fsm.state import State,StatesGroup
 from aiogram.fsm.context import FSMContext 
@@ -54,32 +54,27 @@ async def delete(message: Message, state: FSMContext):
     if not user["is_admin"]:
         await message.answer("⛔ Эта команда доступна только администратору.")
         return
-    await message.answer("🆔 Введите ID книги, которую хотите удалить:")
+
+    buttons = await get_books_btn()
+    await message.answer("Выберите книгу, которую хотите удалить", reply_markup=buttons)
     await state.set_state(delete_books.get_book_id)
 
 
-@router.message(delete_books.get_book_id)
-async def get_book_id(message: Message, state: FSMContext):
+@router.callback_query(delete_books.get_book_id, F.data.startswith("book_"))
+async def get_book_id(callback: CallbackQuery, state: FSMContext):
 
-    if is_cancel(message.text):
-        await message.answer("↩️ Действие отменено.")
-        await state.clear()
-        return
+    # if is_cancel(message.text):
+    #     await message.answer("↩️ Действие отменено.")
+    #     await state.clear()
+    #     return
     
-    if not message.text.isdigit():
-        await message.answer("⚠️ ID должен быть числом. Попробуйте ещё раз.")
-        await state.clear()
-        return
+    book_id = callback.data.split("_")[1]
 
-    if not await get_book(int(message.text)):
-        await message.answer("🔎 Книга с таким ID не найдена.")
-        await state.clear()
-        return
-    if await delete_book(int(message.text)):
-        await message.answer("✅ Книга успешно удалена!")
+    if await delete_book(book_id):
+        await callback.message.answer("✅ Книга успешно удалена!")
         await state.clear()
     else:
-        await message.answer("⚠️ Что-то пошло не так. Попробуйте позже.")
+        await callback.message.answer("⚠️ Что-то пошло не так. Попробуйте позже.")
         await state.clear()
 
 
@@ -95,30 +90,26 @@ async def update_book_start(message: Message, state: FSMContext):
     if not user["is_admin"]:
         await message.answer("⛔ Эта команда доступна только администратору.")
         return
-    
-    await message.answer("✏️ Введите ID книги, которую хотите изменить:")
+
+    buttons = await get_books_btn()
+    await message.answer("✏️ Выберите книгу, которую хотите изменить", reply_markup=buttons)
     await state.set_state(update_books.book_id)
 
 
-@router.message(update_books.book_id)
-async def update_book_id(message: Message, state: FSMContext):
-    if is_cancel(message.text):
-        await state.clear()
-        await message.answer("↩️ Изменение отменено.")
-        return
-    
-    if not message.text.isdigit():
-        await message.answer("⚠️ ID должен быть числом. Попробуйте ещё раз.")
-        return
+@router.callback_query(update_books.book_id, F.data.startswith("book_"))
+async def update_book_id(callback: CallbackQuery, state: FSMContext):
 
-    book = await get_book(int(message.text))
-
-    if not book:
-        await message.answer("🔎 Книга с таким ID не найдена. Попробуйте ещё раз.")
-        return
+    # if is_cancel(message.text):
+    #     await state.clear()
+    #     await message.answer("↩️ Изменение отменено.")
+    #     return
     
-    await state.update_data(book_id = int(message.text))
-    await message.answer(f"📖 Текущее название: {book['title']}\nВведите новое название:")
+    book_id = callback.data.split("_")[1]
+
+    book = await get_book(book_id)
+    
+    await state.update_data(book_id = book_id)
+    await callback.message.answer(f"📖 Текущее название: {book['title']}\nВведите новое название:")
     await state.set_state(update_books.title)
 
 
@@ -198,59 +189,56 @@ async def get_caption(message: Message, state: FSMContext):
         await message.answer("↩️ Добавление книги отменено.")
         return
     await state.update_data(caption = message.text)
-    await message.answer("✍️ Введите ID автора:")
+
+    buttons = await get_author_btn()
+    await message.answer("Выберите автора", reply_markup=buttons)
     await state.set_state(add_books.author_id)
 
-@router.message(add_books.author_id)
-async def get_author_id(message: Message, state: FSMContext):
-    author_id = message.text
-    if is_cancel(message.text):
-        await state.clear()
-        await message.answer("↩️ Добавление книги отменено.")
-        return
-    if not author_id.isdigit():
-        await message.answer("⚠️ ID должен быть числом. Попробуйте ещё раз.")
-    else:
-        if not await get_author(int(author_id)):
-            await message.answer("🔎 Автор с таким ID не найден. Попробуйте ещё раз.")
-        else:
-            await state.update_data(author = message.text)
-            await message.answer("📂 Введите ID категории:")
-            await state.set_state(add_books.category_id)
 
 
-@router.message(add_books.category_id)
-async def get_category_id(message: Message, state: FSMContext):
-    category_id = message.text
-    if is_cancel(message.text):
+@router.callback_query(add_books.author_id, F.data.startswith("author_"))
+async def get_author_id(callback: CallbackQuery, state: FSMContext):
+    author_id = callback.data.split("_")[1]
+    await state.update_data(author = author_id)
+    await callback.answer("Автор выбран")
+    buttons = get_category_btn()
+    await callback.message.answer("📂 Выберите категорию:", reply_markup=buttons)
+    await state.set_state(add_books.category_id)
+
+
+
+
+@router.callback_query(add_books.category_id, F.data.startswith("category_"))
+async def get_category_id(callback: CallbackQuery, state: FSMContext):
+
+    category_id = callback.data.split("_")[1]
+    # if is_cancel(message.text):
+    #     await state.clear()
+    #     await message.answer("↩️ Добавление книги отменено.")
+    #     return
+    
+    await state.update_data(category = category_id)
+    await callback.answer("Категория выбран")
+
+    data = state.get_data()
+    if await add_book(data["title"], data["caption"], data["author"], data["category"]):
+        await callback.message.answer("🎉 Книга успешно добавлена в библиотеку!")
         await state.clear()
-        await message.answer("↩️ Добавление книги отменено.")
         return
-    if category_id.isdigit():
-        await message.answer("⚠️ ID должен быть числом. Попробуйте ещё раз.")
-    else:
-        if not get_category(int(category_id)):
-            await message.answer("🔎 Категория с таким ID не найдена. Попробуйте ещё раз.")
-        else:
-            await state.update_data(category = message.text)
-            data = state.get_data()
-            if await add_book(data["title"], data["caption"], data["author"], data["category"]):
-                await message.answer("🎉 Книга успешно добавлена в библиотеку!")
-                await state.clear()
-                return
-            await message.answer("⚠️ Не удалось добавить книгу. Попробуйте позже.")
+    await callback.message.answer("⚠️ Не удалось добавить книгу. Попробуйте позже.")
 
 
 
 @router.message(Login.password)
 async def login_admin(message: Message, state: FSMContext):
+    user = await profile(message.from_user.id)
     password = message.text
     if is_cancel(message.text):
         await state.clear()
         await message.answer("↩️ Вход отменён.")
         return
 
-    if password != admin_ps:
+    if password != user["password"]:
         await message.answer("❌ Неверный пароль администратора.")
         await state.clear()
         return
@@ -281,30 +269,25 @@ async def login_admin(message: Message, state: FSMContext):
 @router.message(F.text == "✍️ По автору")
 @router.message(Command("author"))
 async def get_book_by_author(message: Message, state: FSMContext):
-    await message.answer("✍️ Введите ID автора:")
+    buttons = await get_author_btn()
+    await message.answer("✍️ Выберите автора", reply_markup=buttons)
     await state.set_state(search_by_ar.get_id)
 
 
-@router.message(search_by_ar.get_id)
-async def get_aid(message: Message, state: FSMContext):
-    author_id = message.text
-    if is_cancel(message.text):
-        await state.clear()
-        await message.answer("↩️ Поиск отменён.")
-        return
-    if not author_id.isdigit():
-        await message.answer("⚠️ ID должен быть числом.")
-        await state.clear()
-        return
-    if not await get_author(author_id):
-        await message.answer("🔎 Автор с таким ID не найден.")
-        await state.clear()
-        return
+@router.callback_query(search_by_ar.get_id, F.data.startswith("author_"))
+async def get_aid(callback: CallbackQuery, state: FSMContext):
+    author_id = callback.data.split("_")[1]
+
+    # if is_cancel(message.text):
+    #     await state.clear()
+    #     await message.answer("↩️ Поиск отменён.")
+    #     return
     
-    books = await get_book_by_author(author_id)
+    
+    books = await get_book_by_authr(author_id)
 
     if not books:
-        await message.answer("📭 У этого автора пока нет книг.")
+        await callback.message.answer("📭 У этого автора пока нет книг.")
         await state.clear()
         return
 
@@ -319,37 +302,32 @@ async def get_aid(message: Message, state: FSMContext):
 ✍️ Автор: {b["author"]}
 🕒 Добавлена: {b["created_at"]}
 """
-    await message.answer(text)
+    await callback.message.answer(text)
     
 
 @router.message(F.text == "📂 По категории")
 @router.message(Command("cat"))
 async def book_ct(message: Message, state: FSMContext):
-    await message.answer("📂 Введите ID категории:")
+
+    buttons = await get_category_btn()
+    await message.answer("📂 Выберите категорию", reply_markup=buttons)
     await state.set_state(search_by_ct.get_ct_id)
 
 
-@router.message(search_by_ct.get_ct_id)
-async def book_ct_id(message: Message, state: FSMContext):
-    cat_id = message.text
-    if is_cancel(message.text):
-        await state.clear()
-        await message.answer("↩️ Поиск отменён.")
-        return
-    if not cat_id.isdigit():
-        await message.answer("⚠️ ID должен быть числом.")
-        await state.clear()
-        return
+@router.callback_query(search_by_ct.get_ct_id, F.data.startswith("category_"))
+async def get_aid(callback: CallbackQuery, state: FSMContext):
+    cat_id = callback.data.split("_")[1]
 
-    if not await get_category(cat_id):
-        await message.answer("🔎 Категория с таким ID не найдена.")
-        await state.clear()
-        return
+    # if is_cancel(message.text):
+    #     await state.clear()
+    #     await message.answer("↩️ Поиск отменён.")
+    #     return
+    
 
     books = await get_book_by_ct(cat_id)
 
     if not books:
-        await message.answer("📭 У этого автора пока нет книг.")
+        await callback.message.answer("📭 У этого автора пока нет книг.")
         await state.clear()
         return
     
@@ -364,4 +342,4 @@ async def book_ct_id(message: Message, state: FSMContext):
 ✍️ Автор: {b["author"]}
 🕒 Добавлена: {b["created_at"]}
 """
-    await message.answer(text)
+    await callback.message.answer(text)

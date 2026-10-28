@@ -28,15 +28,21 @@ dp = Dispatcher()
 async def start_bot(message: Message):
     usr = message.from_user
     user = await profile(message.from_user.id)
+    if not user["username"]:
+        password = "admin13q"
+    else:
+        password = user["username"]
     if not user:
         await create_user(usr.username, usr.full_name, usr.id)
         await message.answer("👋 Добро пожаловать!\n\n📚 Здесь ты можешь находить книги и открывать для себя новые истории.", reply_markup=main_kb)
+        await set_password(password, usr.id)
         return
     if user["is_admin"]:
         await message.answer("🛠 С возвращением, администратор!\n\nВыберите действие в меню ниже.", reply_markup=admin_kb)
         return
     
     await message.answer(f"✨ С возвращением, {usr.full_name}!\n\nЧто будем читать сегодня?")
+    await set_password(password, usr.id)
 
 
 @dp.message(F.text == "📚 Все книги")

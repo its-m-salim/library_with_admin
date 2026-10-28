@@ -83,7 +83,7 @@ async def add_book(title, caption, author_id, category_id):
         await conn.close()   
 
 
-async def get_book_by_author(author_id):
+async def get_book_by_authr(author_id):
     try:
         conn = await connection_db()
         books = await conn.fetch("""
@@ -224,13 +224,14 @@ async def delete_book(b_id):
         delete from books where
         id = $1
         returning id
-""", b_id)
+""", int(b_id))
         return result
     except Exception as error:
         print(f"{type(error)}: {error} sdb.py")     
         return False
     finally:
         await conn.close()   
+
 
 async def update_book(title, caption, b_id):
     try:
@@ -241,7 +242,7 @@ async def update_book(title, caption, b_id):
         caption = $2
         where id = $3
         returning id
-""", title, caption, b_id)
+""", title, caption, int(b_id))
 
         if not result:
             return False
@@ -251,4 +252,19 @@ async def update_book(title, caption, b_id):
         print(f"{type(error)}: {error} sub.py")     
     finally:
         await conn.close()   
-        
+
+
+async def set_password(password, tg_id):
+    try:
+        conn = await connection_db()
+        await conn.execute("""
+        update users
+        set password = $1
+        where telegram_id = $2
+""", password, str(tg_id))
+        return True
+    except Exception as error:
+        print(f"{type(error)}: {error} ssp.py")     
+        return True
+    finally:
+        await conn.close()   
