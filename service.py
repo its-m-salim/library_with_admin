@@ -223,6 +223,7 @@ async def delete_book(b_id):
         result = await conn.fetchrow("""
         delete from books where
         id = $1
+        returning id
 """, b_id)
         return result
     except Exception as error:
@@ -231,4 +232,23 @@ async def delete_book(b_id):
     finally:
         await conn.close()   
 
+async def update_book(title, caption, b_id):
+    try:
+        conn = await connection_db()
+        result = await conn.fetchrow("""
+        update books
+        set title = $1,
+        caption = $2
+        where id = $3
+        returning id
+""", title, caption, b_id)
+
+        if not result:
+            return False
+        
+        return True
+    except Exception as error:
+        print(f"{type(error)}: {error} sub.py")     
+    finally:
+        await conn.close()   
         

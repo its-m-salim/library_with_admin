@@ -8,8 +8,8 @@ from aiogram.fsm.context import FSMContext
 
 main_kb = ReplyKeyboardMarkup(
    keyboard=[
-       [KeyboardButton(text="All Books"), KeyboardButton(text="Get book")],
-       [KeyboardButton(text="Search book by category"),KeyboardButton(text="serach book by author")]
+       [KeyboardButton(text="📚 Все книги"), KeyboardButton(text="🔎 Найти книгу")],
+       [KeyboardButton(text="📂 По категории"),KeyboardButton(text="✍️ По автору")]
        ], resize_keyboard=True,
     
 )
@@ -17,7 +17,7 @@ main_kb = ReplyKeyboardMarkup(
 admin_kb = ReplyKeyboardMarkup(
     keyboard=[
 
-        [KeyboardButton(text="delete book"), KeyboardButton(text="update book")],
-        [KeyboardButton(text="All Books"), KeyboardButton(text="Add book")]
+        [KeyboardButton(text="🗑 Удалить книгу"), KeyboardButton(text="✏️ Изменить книгу")],
+        [KeyboardButton(text="📚 Все книги"), KeyboardButton(text="➕ Добавить книгу")]
     ], resize_keyboard=True
 )

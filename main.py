@@ -30,33 +30,33 @@ async def start_bot(message: Message):
     user = await profile(message.from_user.id)
     if not user:
         await create_user(usr.username, usr.full_name, usr.id)
-        await message.answer("Hello my friend ", reply_markup=main_kb)
+        await message.answer("👋 Добро пожаловать!\n\n📚 Здесь ты можешь находить книги и открывать для себя новые истории.", reply_markup=main_kb)
         return
     if user["is_admin"]:
-        await message.answer("Welcome back, admin!", reply_markup=admin_kb)
+        await message.answer("🛠 С возвращением, администратор!\n\nВыберите действие в меню ниже.", reply_markup=admin_kb)
         return
     
-    await message.answer(f"Welcome back, {usr.full_name}")
+    await message.answer(f"✨ С возвращением, {usr.full_name}!\n\nЧто будем читать сегодня?")
 
 
-@dp.message(F.text == "All Books")
+@dp.message(F.text == "📚 Все книги")
 @dp.message(Command("books"))
 async def all_books(message: Message):
     books = await get_all_books()
 
     if not books:
-        await message.answer("No books yet")
+        await message.answer("📭 В библиотеке пока нет книг. Загляните позже!")
         return
 
-    text = "Вот все доступные униги:\n"
+    text = "📚 **Каталог библиотеки**\n\nВот доступные книги:\n"
 
     for book in books:
         text += f"""
-Имя: {book["title"]}
-Описание: {book["caption"]}
-Категория: {book["category"]}
-Автор: {book["author"]}
-Добавлено: {book["created_at"]}
+📖 Название: {book["title"]}
+📝 Описание: {book["caption"]}
+📂 Категория: {book["category"]}
+✍️ Автор: {book["author"]}
+🕒 Добавлена: {book["created_at"]}
 
 """
     await message.answer(text)
@@ -64,39 +64,74 @@ async def all_books(message: Message):
 
 
 
-@dp.message(Command("categories"))
+@dp.message(Command("cats"))
 async def all_categories(message: Message):
     categories = await get_categories()
 
     if not categories:
-        await message.answer("It seems there is no categories yet")
+        await message.answer("📭 Категорий пока нет.")
         return
 
-    text = "Here is all the categories\n"
+    text = "📂 **Категории библиотеки**\n"
     for c in categories:
         text += f"""
-ID: {c["id"]}
-Name: {c["name"]}
+🆔 ID: {c["id"]}
+📌 Название: {c["name"]}
 """
     await message.answer(text)
 
 
 @dp.message(Command("authors"))
 async def all_authosr(message: Message):
-    authors = await get_categories()
+    authors = await get_authors()
 
     if not authors:
-        await message.answer("It seems there is no authors yet")
+        await message.answer("📭 Авторы пока не добавлены.")
         return
 
-    text = "Here is all the authors\n"
+    text = "✍️ **Авторы библиотеки**\n"
     for a in authors:
         text += f"""
-ID: {a["id"]}
-Full Name: {a["full_name"]}
+🆔 ID: {a["id"]}
+👤 Имя автора: {a["full_name"]}
 """
     await message.answer(text)
 
+
+
+@dp.message(Command("help"))
+async def help_command(message: Message):
+    await message.answer("""
+📚 ПОМОЩЬ ПО БИБЛИОТЕКЕ
+
+Добро пожаловать! ✨
+Здесь ты можешь искать книги и знакомиться с каталогом библиотеки.
+
+📖 Команды читателя
+
+/start — главное меню
+/books — посмотреть все книги
+/cats — список категорий
+/authors — список авторов
+/cat — найти книги по категории
+/author — найти книги по автору
+/help — показать это меню
+
+🛠 Команды администратора
+
+/login — получить права администратора
+/add — добавить книгу
+/edit — изменить книгу
+/del — удалить книгу
+
+💡 Полезно знать
+
+• Следуй подсказкам бота после запуска команды.
+• Если хочешь отменить действие, отправь cls.
+• Команды администратора доступны только после входа.
+
+🌟 Приятного чтения!
+""", parse_mode="HTML")
 
 
 
@@ -104,7 +139,7 @@ Full Name: {a["full_name"]}
 
 
 async def main():
-    print("Bot started")
+    print("Бот запущен")
     dp.include_router(state_router)
     await create_tables()
     await dp.start_polling(bot)
