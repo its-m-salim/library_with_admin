@@ -6,6 +6,7 @@ from aiogram.fsm.state import State,StatesGroup
 from aiogram.fsm.context import FSMContext 
 from keyboards import *
 from states import router as state_router
+from states import *
 from service import *
 from connection import *
 
@@ -35,7 +36,7 @@ async def start_bot(message: Message):
         await message.answer("Welcome back, admin!", reply_markup=admin_kb)
         return
     
-    await message.answer(f"Welcome back, {usr.full_name}", reply_markup=main_kb)
+    await message.answer(f"Welcome back, {usr.full_name}")
 
 
 @dp.message(F.text == "All Books")

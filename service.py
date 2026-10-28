@@ -1,6 +1,6 @@
 from connection import *
 
-
+admin_ps = "admin12"
 
 
 async def get_all_books():
@@ -29,7 +29,8 @@ async def get_book(b_id):
 """, int(b_id))
         return book
     except Exception as error:
-        print(f"{type(error)}: {error} sgb.py")     
+        print(f"{type(error)}: {error} sgb.py")  
+        return False   
     finally:
         await conn.close()   
 
@@ -66,14 +67,13 @@ async def profile(tg_id):
         await conn.close()   
 
 
-async def add_book(title, caption, author_id, publisher, category_id):
+async def add_book(title, caption, author_id, category_id):
     try:
         conn = await connection_db()
         result = await conn.execute("""
-        insert into books(title, caption, author_id, publisher, category_id) values
-            ($1, $2, $3, $4, $5)
-""", title, caption, int(author_id), publisher, int(category_id))
-
+        insert into books(title, caption, author_id, category_id) values
+            ($1, $2, $3, $4)
+""", title, caption, int(author_id),  int(category_id))
         if result == "UPDATE 1":
             return True
     except Exception as error:
@@ -180,6 +180,28 @@ async def get_authors():
 
 
 
+
+async def become_admin(tg_id):
+    try:
+        conn = await connection_db()
+        admin = await conn.fetchrow("""
+        update users
+        set is_admin = true
+        where telegram_id = $1
+        returning id
+""", str(tg_id))
+
+        if not admin:
+            return False
+
+        return True
+    except Exception as error:
+        print(f"{type(error)}: {error} sba.py")     
+    finally:
+        await conn.close()   
+
+
+
 async def get_categories():
     try:
         conn = await connection_db()
@@ -192,3 +214,21 @@ async def get_categories():
         return False
     finally:
         await conn.close()   
+
+
+
+async def delete_book(b_id):
+    try:
+        conn = await connection_db()
+        result = await conn.fetchrow("""
+        delete from books where
+        id = $1
+""", b_id)
+        return result
+    except Exception as error:
+        print(f"{type(error)}: {error} sdb.py")     
+        return False
+    finally:
+        await conn.close()   
+
+        

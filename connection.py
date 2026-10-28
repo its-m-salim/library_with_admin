@@ -54,9 +54,9 @@ async def create_tables():
             id serial primary key,
             title varchar(200),
             caption text,
-            author_id int references authors(id),
+            author_id int references authors(id) on delete cascade,
             publisher varchar(200),
-            category_id int references category(id),
+            category_id int references category(id) on delete cascade,
             created_at timestamp default now(),
             is_active bool default true
         );
